@@ -364,6 +364,8 @@ void CTripmine::Spawn()
 	// ResetSequenceInfo( );
 	pev->framerate = 0;
 
+	m_tGunType = GUNTYPE_EQUIP;
+
 	FallInit(); // get ready to fall down
 
 	m_iDefaultAmmo = TRIPMINE_DEFAULT_GIVE;

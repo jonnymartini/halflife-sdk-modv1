@@ -34,6 +34,8 @@ void CCrowbar::Spawn()
 	SET_MODEL(ENT(pev), "models/w_crowbar.mdl");
 	m_iClip = -1;
 
+	m_tGunType = GUNTYPE_NOTGUN;
+
 	FallInit(); // get ready to fall down.
 }
 

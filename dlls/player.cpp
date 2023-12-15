@@ -1194,11 +1194,8 @@ void CBasePlayer::PlayerDeathThink()
 
 	if (HasWeapons())
 	{
-		// we drop the guns here because weapons that have an area effect and can kill their user
-		// will sometimes crash coming back from CBasePlayer::Killed() if they kill their owner because the
-		// player class sometimes is freed. It's safer to manipulate the weapons once we know
-		// we aren't calling into any of their code anymore through the player pointer.
-		PackDeadPlayerItems();
+		DropPlayerItem("");	  // drop the weapon that the player is using
+		RemoveAllItems(true); // Remove every thing else including the HEV
 	}
 
 
@@ -1859,7 +1856,7 @@ void CBasePlayer::PreThink()
 
 			if (!pTrain || (pTrain->ObjectCaps() & FCAP_DIRECTIONAL_USE) == 0 || !pTrain->OnControls(pev))
 			{
-				//ALERT( at_error, "In train mode with no train!\n" );
+				// ALERT( at_error, "In train mode with no train!\n" );
 				m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 				m_iTrain = TRAIN_NEW | TRAIN_OFF;
 				return;
@@ -1922,7 +1919,7 @@ void CBasePlayer::PreThink()
 		pev->velocity = g_vecZero;
 	}
 }
-/* Time based Damage works as follows: 
+		/* Time based Damage works as follows: 
 	1) There are several types of timebased damage:
 
 		#define DMG_PARALYZE		(1 << 14)	// slows affected creature down
@@ -3124,6 +3121,24 @@ bool CBasePlayer::HasWeapons()
 	return false;
 }
 
+bool CBasePlayer::HasWeaponClass(CBasePlayer* pPlayer, CBasePlayerItem* pItem)
+{
+	for (int i = 0; i < MAX_ITEM_TYPES; i++)
+	{
+		CBasePlayerItem* it = pPlayer->m_rgpPlayerItems[i];
+
+		while (it != NULL)
+		{
+			if (it->m_tGunType == pItem->m_tGunType)
+			{
+				return true;
+			}
+
+			it = it->m_pNext;
+		}
+	}
+}
+
 void CBasePlayer::SelectPrevItem(int iItem)
 {
 }
@@ -3376,6 +3391,14 @@ void CBasePlayer::ImpulseCommands()
 	int iImpulse = (int)pev->impulse;
 	switch (iImpulse)
 	{
+	
+	case 70:
+	{
+		if (HasWeapons())
+		{
+			DropPlayerItem(""); // drop the weapon that the player is using
+		}
+	}
 	case 99:
 	{
 
@@ -3626,7 +3649,7 @@ bool CBasePlayer::AddPlayerItem(CBasePlayerItem* pItem)
 	CBasePlayerItem* pInsert;
 
 	pInsert = m_rgpPlayerItems[pItem->iItemSlot()];
-
+	
 	while (pInsert)
 	{
 		if (FClassnameIs(pInsert->pev, STRING(pItem->pev->classname)))
@@ -3652,7 +3675,7 @@ bool CBasePlayer::AddPlayerItem(CBasePlayerItem* pItem)
 		}
 		pInsert = pInsert->m_pNext;
 	}
-
+	
 
 	if (pItem->CanAddToPlayer(this))
 	{
@@ -4547,17 +4570,13 @@ int CBasePlayer::GetCustomDecalFrames()
 }
 
 
-//=========================================================
+
+	//=========================================================
 // DropPlayerItem - drop the named item, or if no name,
 // the active item.
 //=========================================================
 void CBasePlayer::DropPlayerItem(char* pszItemName)
 {
-	if (!g_pGameRules->IsMultiplayer() || (weaponstay.value > 0))
-	{
-		// no dropping in single player.
-		return;
-	}
 
 	if (0 == strlen(pszItemName))
 	{
@@ -4603,45 +4622,142 @@ void CBasePlayer::DropPlayerItem(char* pszItemName)
 		// item we want to drop and hit a BREAK;  pWeapon is the item.
 		if (pWeapon)
 		{
-			if (!g_pGameRules->GetNextBestWeapon(this, pWeapon))
-				return; // can't drop the item they asked for, may be our last item or something we can't holster
+			if ((char*)STRING(pWeapon->pev->classname) == "weapon_crowbar")
+				return;
 
+			if (!m_pLastItem && m_pActiveItem)
+			{
+				g_pGameRules->GetNextBestWeapon(this, m_pActiveItem, true);
+			}
+			else
+			{
+				SelectLastItem();
+			}
 			UTIL_MakeVectors(pev->angles);
-
 			ClearWeaponBit(pWeapon->m_iId); // take item off hud
 
-			CWeaponBox* pWeaponBox = (CWeaponBox*)CBaseEntity::Create("weaponbox", pev->origin + gpGlobals->v_forward * 10, pev->angles, edict());
-			pWeaponBox->pev->angles.x = 0;
-			pWeaponBox->pev->angles.z = 0;
-			pWeaponBox->PackWeapon(pWeapon);
-			pWeaponBox->pev->velocity = gpGlobals->v_forward * 300 + gpGlobals->v_forward * 100;
+			// Create a new weapon and toss it away
+			CBaseEntity* pItem = CBaseEntity::Create((char*)STRING(pWeapon->pev->classname),
+				pev->origin + gpGlobals->v_forward * 10, pev->angles, edict());
+			pItem->pev->velocity = gpGlobals->v_forward * RANDOM_LONG(150, 300) +
+								   gpGlobals->v_forward * RANDOM_LONG(80, 110);
+			pItem->pev->spawnflags |= SF_NORESPAWN; // don't respawn
 
-			// drop half of the ammo for this weapon.
-			int iAmmoIndex;
+			// Convect our weapons (they are CBasePlayerItems) to CBasePlayerWeapons
+			CBasePlayerWeapon* weap = (CBasePlayerWeapon*)pItem;	  // the new weapon
+			CBasePlayerWeapon* OldWeap = (CBasePlayerWeapon*)pWeapon; // the old weapon
+			int AmmoLeftInClip;
 
-			iAmmoIndex = GetAmmoIndex(pWeapon->pszAmmo1()); // ???
-
-			if (iAmmoIndex != -1)
+			// if the weapon doesn't have any clip then save all ammo in the new weapon,
+			// else just save the ammo in the clip
+			if (OldWeap->iMaxClip() == WEAPON_NOCLIP)
 			{
-				// this weapon weapon uses ammo, so pack an appropriate amount.
-				if ((pWeapon->iFlags() & ITEM_FLAG_EXHAUSTIBLE) != 0)
-				{
-					// pack up all the ammo, this weapon is its own ammo type
-					pWeaponBox->PackAmmo(MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[iAmmoIndex]);
-					m_rgAmmo[iAmmoIndex] = 0;
-				}
-				else
-				{
-					// pack half of the ammo
-					pWeaponBox->PackAmmo(MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[iAmmoIndex] / 2);
-					m_rgAmmo[iAmmoIndex] /= 2;
-				}
+				AmmoLeftInClip = m_rgAmmo[OldWeap->m_iPrimaryAmmoType];
+				weap->m_iDefaultAmmo = AmmoLeftInClip;
+			}
+			else
+			{
+				AmmoLeftInClip = OldWeap->m_iClip;
+				weap->m_iClip = AmmoLeftInClip;
+				weap->m_iDefaultAmmo = 0;
 			}
 
-			return; // we're done, so stop searching with the FOR loop.
+			RemovePlayerItem(pWeapon);
+
+			return;
+
 		}
 	}
 }
+
+void CBasePlayer::AliveDropItem(char* pszItemName)
+{
+
+	if (0 == strlen(pszItemName))
+	{
+		// if this string has no length, the client didn't type a name!
+		// assume player wants to drop the active item.
+		// make the string null to make future operations in this function easier
+		pszItemName = NULL;
+	}
+
+	CBasePlayerItem* pWeapon;
+	int i;
+
+	for (i = 0; i < MAX_ITEM_TYPES; i++)
+	{
+		pWeapon = m_rgpPlayerItems[i];
+
+		while (pWeapon)
+		{
+			if (pszItemName)
+			{
+				// try to match by name.
+				if (0 == strcmp(pszItemName, STRING(pWeapon->pev->classname)))
+				{
+					// match!
+					break;
+				}
+			}
+			else
+			{
+				// trying to drop active item
+				if (pWeapon == m_pActiveItem)
+				{
+					// active item!
+					break;
+				}
+			}
+
+			pWeapon = pWeapon->m_pNext;
+		}
+
+
+		// if we land here with a valid pWeapon pointer, that's because we found the
+		// item we want to drop and hit a BREAK;  pWeapon is the item.
+		if (pWeapon)
+		{
+			// Don't drop the melee weapon. You need do replace "weapon_knife" with your melee weapon...
+			if ((char*)STRING(pWeapon->pev->classname) == "crowbar")
+				return;
+
+			g_pGameRules->GetNextBestWeapon(this, pWeapon);
+			UTIL_MakeVectors(pev->angles);
+			pev->weapons &= ~(1 << pWeapon->m_iId); // take item off hud
+
+			// Create a new weapon and toss it away
+			CBaseEntity* pItem = CBaseEntity::Create((char*)STRING(pWeapon->pev->classname),
+				pev->origin + gpGlobals->v_forward * 10, pev->angles, edict());
+			pItem->pev->velocity = gpGlobals->v_forward * RANDOM_LONG(150, 300) +
+								   gpGlobals->v_forward * RANDOM_LONG(80, 110);
+			pItem->pev->spawnflags |= SF_NORESPAWN; // don't respawn
+
+			// Convect our weapons (they are CBasePlayerItems) to CBasePlayerWeapons
+			CBasePlayerWeapon* weap = (CBasePlayerWeapon*)pItem;	  // the new weapon
+			CBasePlayerWeapon* OldWeap = (CBasePlayerWeapon*)pWeapon; // the old weapon
+			int AmmoLeftInClip;
+
+			// if the weapon doesn't have any clip then save all ammo in the new weapon,
+			// else just save the ammo in the clip
+			if (OldWeap->iMaxClip() == WEAPON_NOCLIP)
+			{
+				AmmoLeftInClip = m_rgAmmo[OldWeap->m_iPrimaryAmmoType];
+				weap->m_iDefaultAmmo = AmmoLeftInClip;
+			}
+			else
+			{
+				AmmoLeftInClip = OldWeap->m_iClip;
+				weap->m_iClip = AmmoLeftInClip;
+				weap->m_iDefaultAmmo = 0;
+			}
+
+			RemovePlayerItem(pWeapon);
+
+			return;
+		}
+	}
+}
+
 
 //=========================================================
 // HasPlayerItem Does the player already have this item?

@@ -231,6 +231,8 @@ void CCrossbow::Spawn()
 
 	m_iDefaultAmmo = CROSSBOW_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_PRIM;
+
 	FallInit(); // get ready to fall down.
 }
 

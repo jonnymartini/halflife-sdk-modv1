@@ -169,6 +169,7 @@ void CHalfLifeTeamplay::UpdateGameMode(CBasePlayer* pPlayer)
 }
 
 
+
 const char* CHalfLifeTeamplay::SetDefaultPlayerTeam(CBasePlayer* pPlayer)
 {
 	// copy out the team name from the model

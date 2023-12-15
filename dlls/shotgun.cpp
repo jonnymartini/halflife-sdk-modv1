@@ -36,6 +36,8 @@ void CShotgun::Spawn()
 
 	m_iDefaultAmmo = SHOTGUN_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_PRIM;
+
 	FallInit(); // get ready to fall
 }
 
@@ -111,6 +113,12 @@ void CShotgun::PrimaryAttack()
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = NORMAL_GUN_FLASH;
 
+	// semi auto 
+	if (m_pPlayer->m_afButtonLast & IN_ATTACK)
+	{
+		return;
+	}
+
 	m_iClip--;
 
 	int flags;
@@ -174,7 +182,7 @@ void CShotgun::SecondaryAttack()
 
 	if (m_iClip <= 1)
 	{
-		Reload();
+		//Reload();
 		PlayEmptySound();
 		return;
 	}

@@ -199,6 +199,8 @@ void CSatchel::Spawn()
 
 	m_iDefaultAmmo = SATCHEL_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_EQUIP;
+
 	FallInit(); // get ready to fall down.
 }
 

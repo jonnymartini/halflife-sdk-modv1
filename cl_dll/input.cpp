@@ -968,7 +968,7 @@ void InitInput()
 	gEngfuncs.pfnAddCommand("-graph", IN_GraphUp);
 	gEngfuncs.pfnAddCommand("+break", IN_BreakDown);
 	gEngfuncs.pfnAddCommand("-break", IN_BreakUp);
-
+	
 	lookstrafe = gEngfuncs.pfnRegisterVariable("lookstrafe", "0", FCVAR_ARCHIVE);
 	lookspring = gEngfuncs.pfnRegisterVariable("lookspring", "0", FCVAR_ARCHIVE);
 	cl_anglespeedkey = gEngfuncs.pfnRegisterVariable("cl_anglespeedkey", "0.67", 0);

@@ -920,13 +920,7 @@ void CBasePlayerAmmo::DefaultTouch(CBaseEntity* pOther)
 			pev->nextthink = gpGlobals->time + .1;
 		}
 	}
-	else if (gEvilImpulse101)
-	{
-		// evil impulse 101 hack, kill always
-		SetTouch(NULL);
-		SetThink(&CBasePlayerAmmo::SUB_Remove);
-		pev->nextthink = gpGlobals->time + .1;
-	}
+	
 }
 
 //=========================================================
@@ -1230,6 +1224,43 @@ bool CWeaponBox::PackWeapon(CBasePlayerItem* pWeapon)
 		m_rgpPlayerItems[iWeaponSlot] = pWeapon;
 		pWeapon->m_pNext = NULL;
 	}
+
+	// the "real" thing"
+	if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_crowbar")))
+		SET_MODEL(ENT(pev), "models/w_crowbar.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_9mmhandgun")))
+		SET_MODEL(ENT(pev), "models/w_9mmhandgun.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_357")))
+		SET_MODEL(ENT(pev), "models/w_357.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_shotgun")))
+		SET_MODEL(ENT(pev), "models/w_shotgun.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_9mmAR")))
+		SET_MODEL(ENT(pev), "models/w_9mmar.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_crossbow")))
+		SET_MODEL(ENT(pev), "models/w_crossbow.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_rpg")))
+		SET_MODEL(ENT(pev), "models/w_rpg.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_gauss")))
+		SET_MODEL(ENT(pev), "models/w_gauss.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_hornetgun")))
+		SET_MODEL(ENT(pev), "models/w_hgun.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_egon")))
+		SET_MODEL(ENT(pev), "models/w_egon.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_snark")))
+		SET_MODEL(ENT(pev), "models/w_squeak.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_tripmine")))
+	{
+		pev->body = 3;
+		pev->sequence = 8;
+		pev->absmin = pev->origin + Vector(-16, -16, -5);
+		pev->absmax = pev->origin + Vector(16, 16, 28);
+		SET_MODEL(ENT(pev), "models/v_tripmine.mdl");
+	}
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_handgrenade")))
+		SET_MODEL(ENT(pev), "models/w_grenade.mdl");
+	else if ((!strcmp((char*)STRING(pWeapon->pev->classname), "weapon_satchel")))
+		SET_MODEL(ENT(pev), "models/w_satchel.mdl");
+
 
 	pWeapon->pev->spawnflags |= SF_NORESPAWN; // never respawn
 	pWeapon->pev->movetype = MOVETYPE_NONE;

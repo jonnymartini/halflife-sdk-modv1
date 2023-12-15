@@ -281,6 +281,7 @@ public:
 	bool AddPlayerItem(CBasePlayerItem* pItem) override;
 	bool RemovePlayerItem(CBasePlayerItem* pItem) override;
 	void DropPlayerItem(char* pszItemName);
+	void AliveDropItem(char* pszItemName);
 	bool HasPlayerItem(CBasePlayerItem* pCheckItem);
 	bool HasNamedPlayerItem(const char* pszItemName);
 	bool HasWeapons(); // do I have ANY weapons?
@@ -297,6 +298,9 @@ public:
 	int GiveAmmo(int iAmount, const char* szName, int iMax) override;
 	void SendAmmoUpdate();
 	void SendSingleAmmoUpdate(int ammoIndex);
+
+	bool HasWeaponClass(CBasePlayer* pPlayer, CBasePlayerItem* pItem);
+
 
 private:
 	void InternalSendSingleAmmoUpdate(int ammoIndex);
@@ -355,6 +359,8 @@ public:
 
 	//True if the player is currently spawning.
 	bool m_bIsSpawning = false;
+
+
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)

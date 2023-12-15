@@ -91,7 +91,7 @@ bool CBasePlayerWeapon::DefaultReload(int iClipSize, int iAnim, float fDelay, in
 	SendWeaponAnim(iAnim, body);
 
 	m_fInReload = true;
-
+	
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 3;
 	return true;
 }
@@ -125,20 +125,29 @@ void CBasePlayerWeapon::ItemPostFrame()
 		int j = V_min(iMaxClip() - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);
 
 		// Add them to the clip
-		m_iClip += j;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= j;
-
+		if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] >= iMaxClip())
+		{
+			m_iClip += j;
+			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= iMaxClip();
+		}
+		else
+		{
+			m_iClip = m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
+			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] = 0;
+		}
 		m_pPlayer->TabulateAmmo();
 
 		m_fInReload = false;
 	}
-
 	if ((m_pPlayer->pev->button & IN_ATTACK) == 0)
 	{
 		m_flLastFireTime = 0.0f;
 	}
-
-	if ((m_pPlayer->pev->button & IN_ATTACK2) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
+	if ((m_pPlayer->pev->button & IN_ALT1) != 0 && CanAttack(m_flIronSight, gpGlobals->time, UseDecrement()))
+	{
+		IronSight();
+	}
+	else if ((m_pPlayer->pev->button & IN_ATTACK2) != 0 && CanAttack(m_flNextSecondaryAttack, gpGlobals->time, UseDecrement()))
 	{
 		if (pszAmmo2() && 0 == m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()])
 		{
@@ -186,7 +195,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 			// weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
 			if (m_iClip == 0 && (iFlags() & ITEM_FLAG_NOAUTORELOAD) == 0 && m_flNextPrimaryAttack < (UseDecrement() ? 0.0 : gpGlobals->time))
 			{
-				Reload();
+				//Reload();
 				return;
 			}
 		}

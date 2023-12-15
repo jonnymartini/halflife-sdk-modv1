@@ -336,6 +336,7 @@ void CRpg::Spawn()
 	{
 		m_iDefaultAmmo = RPG_DEFAULT_GIVE;
 	}
+	m_tGunType = GUNTYPE_HEAVY;
 
 	FallInit(); // get ready to fall down.
 }

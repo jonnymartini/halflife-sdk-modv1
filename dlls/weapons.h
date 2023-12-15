@@ -278,6 +278,10 @@ public:
 	int iWeight() { return ItemInfoArray[m_iId].iWeight; }
 	int iFlags() { return ItemInfoArray[m_iId].iFlags; }
 
+	typedef enum GUNTYPE { GUNTYPE_PRIM = 0, GUNTYPE_SECOND, GUNTYPE_NOTGUN, GUNTYPE_HEAVY, GUNTYPE_EQUIP }GUNTYPE;
+	GUNTYPE m_tGunType;
+
+
 	// int		m_iIdPrimary;										// Unique Id for primary ammo
 	// int		m_iIdSecondary;										// Unique Id for secondary ammo
 
@@ -325,6 +329,7 @@ public:
 	// called by CBasePlayerWeapons ItemPostFrame()
 	virtual void PrimaryAttack() {}						  // do "+ATTACK"
 	virtual void SecondaryAttack() {}					  // do "+ATTACK2"
+	virtual void IronSight() {}							// do "+SIGHT"
 	virtual void Reload() {}							  // do "+RELOAD"
 	virtual void WeaponIdle() {}						  // called when no buttons pressed
 	bool UpdateClientData(CBasePlayer* pPlayer) override; // sends hud info to client dll, if things have changed
@@ -353,6 +358,7 @@ public:
 	int m_fInSpecialReload;		   // Are we in the middle of a reload for the shotguns
 	float m_flNextPrimaryAttack;   // soonest time ItemPostFrame will call PrimaryAttack
 	float m_flNextSecondaryAttack; // soonest time ItemPostFrame will call SecondaryAttack
+	float m_flIronSight;			// soonest time ItemPostFrame will call IronSight
 	float m_flTimeWeaponIdle;	   // soonest time ItemPostFrame will call WeaponIdle
 	int m_iPrimaryAmmoType;		   // "primary" ammo index into players m_rgAmmo[]
 	int m_iSecondaryAmmoType;	   // "secondary" ammo index into players m_rgAmmo[]
@@ -499,10 +505,14 @@ public:
 
 	void PrimaryAttack() override;
 	void SecondaryAttack() override;
+	void IronSight() override;
 	void GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim);
 	bool Deploy() override;
+	void Holster() override;
 	void Reload() override;
 	void WeaponIdle() override;
+
+	int m_iDroppedMag;
 
 	bool UseDecrement() override
 	{
@@ -587,6 +597,7 @@ public:
 	void SecondaryAttack() override;
 	bool Deploy() override;
 	void Holster() override;
+	void IronSight() override;
 	void Reload() override;
 	void WeaponIdle() override;
 
@@ -630,6 +641,8 @@ public:
 	void WeaponIdle() override;
 	float m_flNextAnimTime;
 	int m_iShell;
+
+	int m_iDroppedMag;
 
 	bool UseDecrement() override
 	{

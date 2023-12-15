@@ -51,6 +51,8 @@ void CPython::Spawn()
 
 	m_iDefaultAmmo = PYTHON_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_SECOND;
+
 	FallInit(); // get ready to fall down.
 }
 
@@ -104,6 +106,20 @@ void CPython::Holster()
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.0;
 	m_flTimeWeaponIdle = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
 	SendWeaponAnim(PYTHON_HOLSTER);
+}
+
+void CPython::IronSight()
+{
+
+	if ((m_pPlayer->m_afButtonPressed & IN_ALT1) != 0)
+	{
+		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+	}
+	else if ((m_pPlayer->m_afButtonPressed & IN_ALT1) == 0)
+	{
+		m_pPlayer->m_iFOV = 70;
+	}
+
 }
 
 void CPython::SecondaryAttack()

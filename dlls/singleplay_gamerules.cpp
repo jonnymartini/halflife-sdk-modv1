@@ -62,6 +62,9 @@ bool CHalfLifeRules::IsCoOp()
 
 //=========================================================
 //=========================================================
+
+
+
 bool CHalfLifeRules::FShouldSwitchWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon)
 {
 	if (!pPlayer->m_pActiveItem)
@@ -122,13 +125,43 @@ float CHalfLifeRules::FlPlayerFallDamage(CBasePlayer* pPlayer)
 //=========================================================
 void CHalfLifeRules::PlayerSpawn(CBasePlayer* pPlayer)
 {
+
+		bool addDefault;
+		CBaseEntity* pWeaponEntity = NULL;
+
+		// Ensure the player switches to the Glock on spawn regardless of setting
+		const int originalAutoWepSwitch = pPlayer->m_iAutoWepSwitch;
+		pPlayer->m_iAutoWepSwitch = 1;
+
+		pPlayer->SetHasSuit(true);
+
+		addDefault = true;
+
+		while (pWeaponEntity = UTIL_FindEntityByClassname(pWeaponEntity, "game_player_equip"))
+		{
+			pWeaponEntity->Touch(pPlayer);
+			addDefault = false;
+		}
+
+		// for testing only - REMOVE WHEN MOD COMPLETED
+
+		if (addDefault)
+		{
+			pPlayer->GiveNamedItem("weapon_crowbar");
+			pPlayer->GiveNamedItem("weapon_glock");
+			pPlayer->GiveAmmo(68, "9mm", _9MM_MAX_CARRY); // 4 full reloads
+		}
+
+		pPlayer->m_iAutoWepSwitch = originalAutoWepSwitch;
+
 }
 
 //=========================================================
 //=========================================================
 bool CHalfLifeRules::AllowAutoTargetCrosshair()
 {
-	return (g_iSkillLevel == SKILL_EASY);
+	//return (g_iSkillLevel == SKILL_EASY);
+	return 0;
 }
 
 //=========================================================
@@ -181,6 +214,26 @@ void CHalfLifeRules::DeathNotice(CBasePlayer* pVictim, entvars_t* pKiller, entva
 //=========================================================
 void CHalfLifeRules::PlayerGotWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon)
 {
+}
+
+
+//=========================================================
+// CanHavePlayerItem - Does the player have an item of the
+// same class?
+//=========================================================
+bool CHalfLifeRules::CanHavePlayerItem(CBasePlayer* pPlayer, CBasePlayerItem* pItem)
+{
+	
+	if (pItem->m_tGunType == CBasePlayerItem::GUNTYPE_PRIM && pPlayer->HasWeaponClass(pPlayer, pItem) == true)
+			return false;	
+	if (pItem->m_tGunType == CBasePlayerItem::GUNTYPE_SECOND && pPlayer->HasWeaponClass(pPlayer, pItem) == true)
+			return false;
+	if (pItem->m_tGunType == CBasePlayerItem::GUNTYPE_HEAVY && pPlayer->HasWeaponClass(pPlayer, pItem) == true)
+			return false;
+	if (pItem->m_tGunType == CBasePlayerItem::GUNTYPE_EQUIP && pPlayer->HasWeaponClass(pPlayer, pItem) == true)
+			return false;
+	
+	return CGameRules::CanHavePlayerItem(pPlayer, pItem);
 }
 
 //=========================================================
@@ -266,6 +319,11 @@ bool CHalfLifeRules::IsAllowedToSpawn(CBaseEntity* pEntity)
 }
 
 //=========================================================
+// ammo system
+//=========================================================
+
+
+//=========================================================
 //=========================================================
 void CHalfLifeRules::PlayerGotAmmo(CBasePlayer* pPlayer, char* szName, int iCount)
 {
@@ -303,7 +361,7 @@ float CHalfLifeRules::FlHealthChargerRechargeTime()
 //=========================================================
 int CHalfLifeRules::DeadPlayerWeapons(CBasePlayer* pPlayer)
 {
-	return GR_PLR_DROP_GUN_NO;
+	return GR_PLR_DROP_GUN_ACTIVE;
 }
 
 //=========================================================

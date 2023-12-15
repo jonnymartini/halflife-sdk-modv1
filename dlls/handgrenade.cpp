@@ -37,6 +37,8 @@ void CHandGrenade::Spawn()
 
 	m_iDefaultAmmo = HANDGRENADE_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_NOTGUN;
+
 	FallInit(); // get ready to fall down.
 }
 

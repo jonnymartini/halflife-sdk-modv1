@@ -42,6 +42,8 @@ void CEgon::Spawn()
 
 	m_iDefaultAmmo = EGON_DEFAULT_GIVE;
 
+	m_tGunType = GUNTYPE_HEAVY;
+
 	FallInit(); // get ready to fall down.
 }
 

@@ -212,6 +212,7 @@ public:
 
 	// Weapon retrieval
 	void PlayerGotWeapon(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon) override;
+	bool CanHavePlayerItem(CBasePlayer* pPlayer, CBasePlayerItem* pWeapon) override; // rule for weapon class
 
 	// Weapon spawn/respawn control
 	int WeaponShouldRespawn(CBasePlayerItem* pWeapon) override;
@@ -251,6 +252,8 @@ public:
 	// Teamplay stuff
 	const char* GetTeamID(CBaseEntity* pEntity) override { return ""; }
 	int PlayerRelationship(CBaseEntity* pPlayer, CBaseEntity* pTarget) override;
+
+	
 };
 
 //=========================================================

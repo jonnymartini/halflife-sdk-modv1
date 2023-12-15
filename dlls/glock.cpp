@@ -19,6 +19,7 @@
 #include "monsters.h"
 #include "weapons.h"
 #include "player.h"
+#include "gamerules.h"
 
 LINK_ENTITY_TO_CLASS(weapon_glock, CGlock);
 LINK_ENTITY_TO_CLASS(weapon_9mmhandgun, CGlock);
@@ -31,6 +32,8 @@ void CGlock::Spawn()
 	SET_MODEL(ENT(pev), "models/w_9mmhandgun.mdl");
 
 	m_iDefaultAmmo = GLOCK_DEFAULT_GIVE;
+
+	m_tGunType = GUNTYPE_SECOND;
 
 	FallInit(); // get ready to fall down.
 }
@@ -53,6 +56,8 @@ void CGlock::Precache()
 
 	m_usFireGlock1 = PRECACHE_EVENT(1, "events/glock1.sc");
 	m_usFireGlock2 = PRECACHE_EVENT(1, "events/glock2.sc");
+
+	//m_iDroppedMag = PRECACHE_MODEL("models/w_9mmclip.mdl");
 }
 
 bool CGlock::GetItemInfo(ItemInfo* p)
@@ -78,14 +83,62 @@ bool CGlock::Deploy()
 	return DefaultDeploy("models/v_9mmhandgun.mdl", "models/p_9mmhandgun.mdl", GLOCK_DRAW, "onehanded");
 }
 
+void CGlock::Holster()
+{
+	if (m_pPlayer->m_iFOV != 0)
+	{
+		IronSight();
+	}
+	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
+	SendWeaponAnim(GLOCK_HOLSTER);
+}
+
+// TEST FOR IronSight Button
+void CGlock::IronSight()
+{
+	if ((m_pPlayer->m_iFOV) != 0)
+	{
+		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+		ALERT(at_console, "IN_ALT1 released\n");
+	}
+	else if ((m_pPlayer->m_iFOV) != 70)
+	{
+		m_pPlayer->m_iFOV = 70;
+		ALERT(at_console, "IN_ALT1 pressed\n");
+	}
+
+	m_flIronSight = UTIL_WeaponTimeBase() + 0.5;
+}
+
 void CGlock::SecondaryAttack()
 {
-	GlockFire(0.1, 0.2, false);
+	// previous code
+	// GlockFire(0.1, 0.2, false);
+	//pev->nextthink = UTIL_WeaponTimeBase() + 0.1;
+	//m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
+
+	if ((m_pPlayer->m_iFOV) != 0)
+	{
+		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
+		ALERT(at_console, "IN_ATTACK2 released\n");
+	}
+	else if ((m_pPlayer->m_iFOV) != 70)
+	{
+		m_pPlayer->m_iFOV = 70;
+		ALERT(at_console, "IN_ATTACK2 pressed\n");
+	}
+
+	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
+
 }
 
 void CGlock::PrimaryAttack()
 {
-	GlockFire(0.01, 0.3, true);
+	// previous code
+	// GlockFire(0.01, 0.3, true);
+
+
+		GlockFire(0.01, 0.001, true);
 }
 
 void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
@@ -100,6 +153,13 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 
 		return;
 	}
+
+	// for semi-auto gun
+	if (m_pPlayer->m_afButtonLast & IN_ATTACK)
+	{
+		return;
+	}
+	
 
 	m_iClip--;
 
