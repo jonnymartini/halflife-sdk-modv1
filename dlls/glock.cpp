@@ -56,6 +56,9 @@ void CGlock::Precache()
 
 	m_usFireGlock1 = PRECACHE_EVENT(1, "events/glock1.sc");
 	m_usFireGlock2 = PRECACHE_EVENT(1, "events/glock2.sc");
+	m_usFireGlock3 = PRECACHE_EVENT(1, "events/glock3.sc");
+	m_usFireGlock4 = PRECACHE_EVENT(1, "events/glock4.sc");
+	
 
 	//m_iDroppedMag = PRECACHE_MODEL("models/w_9mmclip.mdl");
 }
@@ -93,21 +96,42 @@ void CGlock::Holster()
 	SendWeaponAnim(GLOCK_HOLSTER);
 }
 
-// TEST FOR IronSight Button
+// IronSight (press mechanism - no hold/release)
 void CGlock::IronSight()
 {
+
+	if (m_pPlayer->m_afButtonLast & IN_ALT1)
+	{
+		return;
+	}
 	if ((m_pPlayer->m_iFOV) != 0)
 	{
 		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
-		ALERT(at_console, "IN_ALT1 released\n");
+		m_fSight = false;
+		m_flTimeWeaponIdle = 0.0;
+		WeaponIdle();
 	}
-	else if ((m_pPlayer->m_iFOV) != 70)
+	else if ((m_pPlayer->m_iFOV) != 75)
 	{
-		m_pPlayer->m_iFOV = 70;
-		ALERT(at_console, "IN_ALT1 pressed\n");
+		m_pPlayer->m_iFOV = 75;
+		m_fSight = true;
+		m_flTimeWeaponIdle = 0.0;
+		WeaponIdle();
 	}
 
-	m_flIronSight = UTIL_WeaponTimeBase() + 0.5;
+	m_flSight = gpGlobals->time + 0.1;
+
+	// for test only
+	if (m_fSight != false)
+	{
+		ALERT(at_console, "THIS IS TRUE\n");
+		return;
+	}
+	else
+	{
+		ALERT(at_console, "THIS IS FALSE\n");
+		return;
+	}
 }
 
 void CGlock::SecondaryAttack()
@@ -116,20 +140,6 @@ void CGlock::SecondaryAttack()
 	// GlockFire(0.1, 0.2, false);
 	//pev->nextthink = UTIL_WeaponTimeBase() + 0.1;
 	//m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.0;
-
-	if ((m_pPlayer->m_iFOV) != 0)
-	{
-		m_pPlayer->m_iFOV = 0; // 0 means reset to default fov
-		ALERT(at_console, "IN_ATTACK2 released\n");
-	}
-	else if ((m_pPlayer->m_iFOV) != 70)
-	{
-		m_pPlayer->m_iFOV = 70;
-		ALERT(at_console, "IN_ATTACK2 pressed\n");
-	}
-
-	m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
-
 }
 
 void CGlock::PrimaryAttack()
@@ -137,8 +147,7 @@ void CGlock::PrimaryAttack()
 	// previous code
 	// GlockFire(0.01, 0.3, true);
 
-
-		GlockFire(0.01, 0.001, true);
+	GlockFire(0.01, 0.001, true);
 }
 
 void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
@@ -202,9 +211,26 @@ void CGlock::GlockFire(float flSpread, float flCycleTime, bool fUseAutoAim)
 	}
 
 	Vector vecDir;
-	vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, Vector(flSpread, flSpread, flSpread), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed);
-
-	PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, 0, 0, (m_iClip == 0) ? 1 : 0, 0);
+	if (m_fSight != false)
+	{
+		// ... VecAimingm, Vector(flSpread, flSpread, flSpread),
+		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, Vector(flSpread, flSpread, flSpread), 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed);
+		ALERT(at_console, "Very precise\n");
+	}
+	else
+	{
+		vecDir = m_pPlayer->FireBulletsPlayer(1, vecSrc, vecAiming, VECTOR_CONE_8DEGREES, 8192, BULLET_PLAYER_9MM, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed);
+		ALERT(at_console, "Not precise at all\n");
+	}
+	
+	if (m_fSight != false)
+	{
+		PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock3 : m_usFireGlock4, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, 0, 0, (m_iClip == 0) ? 1 : 0, 0);
+	}
+	else
+	{
+		PLAYBACK_EVENT_FULL(flags, m_pPlayer->edict(), fUseAutoAim ? m_usFireGlock1 : m_usFireGlock2, 0.0, g_vecZero, g_vecZero, vecDir.x, vecDir.y, 0, 0, (m_iClip == 0) ? 1 : 0, 0);
+	}
 
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay(flCycleTime);
 
@@ -223,10 +249,20 @@ void CGlock::Reload()
 
 	bool iResult;
 
-	if (m_iClip == 0)
-		iResult = DefaultReload(17, GLOCK_RELOAD, 1.5);
+	if (m_fSight != false)
+	{
+		if (m_iClip == 0)
+			iResult = DefaultReload(17, GLOCK_RELOAD_S, 1.5);
+		else
+			iResult = DefaultReload(17, GLOCK_RELOAD_NOT_EMPTY_S, 1.5);
+	}
 	else
-		iResult = DefaultReload(17, GLOCK_RELOAD_NOT_EMPTY, 1.5);
+	{
+		if (m_iClip == 0)
+			iResult = DefaultReload(17, GLOCK_RELOAD, 1.5);
+		else
+			iResult = DefaultReload(17, GLOCK_RELOAD_NOT_EMPTY, 1.5);
+	}
 
 	if (iResult)
 	{
@@ -249,22 +285,30 @@ void CGlock::WeaponIdle()
 	if (m_iClip != 0)
 	{
 		int iAnim;
-		float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0.0, 1.0);
 
-		if (flRand <= 0.3 + 0 * 0.75)
+		if (m_fSight != false)
 		{
-			iAnim = GLOCK_IDLE3;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 49.0 / 16;
-		}
-		else if (flRand <= 0.6 + 0 * 0.875)
-		{
-			iAnim = GLOCK_IDLE1;
+			iAnim = GLOCK_IDLE3_S;
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 60.0 / 16.0;
 		}
 		else
 		{
-			iAnim = GLOCK_IDLE2;
-			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
+			float flRand = UTIL_SharedRandomFloat(m_pPlayer->random_seed, 0.0, 1.0);
+			if (flRand <= 0.3 + 0 * 0.75)
+			{
+				iAnim = GLOCK_IDLE3;
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 49.0 / 16;
+			}
+			else if (flRand <= 0.6 + 0 * 0.875)
+			{
+				iAnim = GLOCK_IDLE1;
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 60.0 / 16.0;
+			}
+			else
+			{
+				iAnim = GLOCK_IDLE2;
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 40.0 / 16.0;
+			}
 		}
 		SendWeaponAnim(iAnim);
 	}

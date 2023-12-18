@@ -358,7 +358,7 @@ public:
 	int m_fInSpecialReload;		   // Are we in the middle of a reload for the shotguns
 	float m_flNextPrimaryAttack;   // soonest time ItemPostFrame will call PrimaryAttack
 	float m_flNextSecondaryAttack; // soonest time ItemPostFrame will call SecondaryAttack
-	float m_flIronSight;			// soonest time ItemPostFrame will call IronSight
+	float m_flSight;
 	float m_flTimeWeaponIdle;	   // soonest time ItemPostFrame will call WeaponIdle
 	int m_iPrimaryAmmoType;		   // "primary" ammo index into players m_rgAmmo[]
 	int m_iSecondaryAmmoType;	   // "secondary" ammo index into players m_rgAmmo[]
@@ -486,10 +486,15 @@ enum glock_e
 	GLOCK_IDLE1 = 0,
 	GLOCK_IDLE2,
 	GLOCK_IDLE3,
+	GLOCK_IDLE3_S,
 	GLOCK_SHOOT,
+	GLOCK_SHOOT_S,
 	GLOCK_SHOOT_EMPTY,
+	GLOCK_SHOOT_EMPTY_S,
 	GLOCK_RELOAD,
+	GLOCK_RELOAD_S,
 	GLOCK_RELOAD_NOT_EMPTY,
+	GLOCK_RELOAD_NOT_EMPTY_S,
 	GLOCK_DRAW,
 	GLOCK_HOLSTER,
 	GLOCK_ADD_SILENCER
@@ -512,7 +517,7 @@ public:
 	void Reload() override;
 	void WeaponIdle() override;
 
-	int m_iDroppedMag;
+	
 
 	bool UseDecrement() override
 	{
@@ -525,10 +530,12 @@ public:
 
 private:
 	int m_iShell;
-
+	bool m_fSight;
 
 	unsigned short m_usFireGlock1;
 	unsigned short m_usFireGlock2;
+	unsigned short m_usFireGlock3;
+	unsigned short m_usFireGlock4;
 };
 
 enum crowbar_e

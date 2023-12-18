@@ -143,7 +143,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	{
 		m_flLastFireTime = 0.0f;
 	}
-	if ((m_pPlayer->pev->button & IN_ALT1) != 0 && CanAttack(m_flIronSight, gpGlobals->time, UseDecrement()))
+	if ((m_pPlayer->pev->button & IN_ALT1) != 0 && m_flSight < gpGlobals->time)
 	{
 		IronSight();
 	}
